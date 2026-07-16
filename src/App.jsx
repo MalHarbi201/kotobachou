@@ -564,9 +564,20 @@ function UploadView({ notes, onSaved }) {
 
 function BrowseView({ notes, onChange }) {
   const [explainState, setExplainState] = useState({});
+  const [query, setQuery] = useState("");
+
+  const q = query.trim().toLowerCase();
+  function matches() {
+    const fields = Array.prototype.slice.call(arguments);
+    return fields.some(function (f) { return f && String(f).toLowerCase().indexOf(q) !== -1; });
+  }
+
+  const filteredVocab = q ? notes.vocab.filter(function (v) { return matches(v.japanese, v.reading, v.meaning, v.topic); }) : notes.vocab;
+  const filteredGrammar = q ? notes.grammar.filter(function (g) { return matches(g.point, g.explanation, g.example_ja, g.example_en); }) : notes.grammar;
+  const filteredExamples = q ? notes.examples.filter(function (e) { return matches(e.japanese, e.translation); }) : notes.examples;
 
   const byTopic = {};
-  notes.vocab.forEach(function (v) {
+  filteredVocab.forEach(function (v) {
     const t = v.topic || "Uncategorized";
     if (!byTopic[t]) byTopic[t] = [];
     byTopic[t].push(v);
@@ -628,6 +639,21 @@ function BrowseView({ notes, onChange }) {
         <p style={{ marginTop: 16, color: "var(--ink-soft)" }}>Nothing saved yet. Add some notes first.</p>
       )}
 
+      {(notes.vocab.length > 0 || notes.grammar.length > 0 || notes.examples.length > 0) && (
+        <input
+          className="kb-input"
+          type="text"
+          placeholder="Search your notes…"
+          value={query}
+          onChange={function (e) { setQuery(e.target.value); }}
+          style={{ marginTop: 16, marginBottom: 8 }}
+        />
+      )}
+
+      {q && filteredVocab.length === 0 && filteredGrammar.length === 0 && filteredExamples.length === 0 && (
+        <p style={{ marginTop: 16, color: "var(--ink-soft)" }}>No matches for "{query}".</p>
+      )}
+
       {Object.keys(byTopic).sort().map(function (topic) {
         return (
           <div key={topic}>
@@ -651,10 +677,10 @@ function BrowseView({ notes, onChange }) {
         );
       })}
 
-      {notes.grammar.length > 0 && (
+      {filteredGrammar.length > 0 && (
         <div>
           <div className="kb-topic-header">Grammar</div>
-          {notes.grammar.map(function (g) {
+          {filteredGrammar.map(function (g) {
             return (
               <div key={g.id} className="kb-item-row" style={{ flexDirection: "column" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", width: "100%" }}>
@@ -673,10 +699,10 @@ function BrowseView({ notes, onChange }) {
         </div>
       )}
 
-      {notes.examples.length > 0 && (
+      {filteredExamples.length > 0 && (
         <div>
           <div className="kb-topic-header">Example sentences</div>
-          {notes.examples.map(function (e) {
+          {filteredExamples.map(function (e) {
             return (
               <div key={e.id} className="kb-item-row" style={{ flexDirection: "column" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", width: "100%" }}>
