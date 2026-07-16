@@ -19,6 +19,7 @@ exports.handler = async function (event) {
         model: "claude-sonnet-5",
         max_tokens: maxTokens,
         system: system,
+        thinking: { type: "disabled" },
         messages: [{ role: "user", content: content }]
       })
     });

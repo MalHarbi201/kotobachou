@@ -102,7 +102,7 @@ Pull out ONLY items that are NOT already in the saved list (treat something as a
 Respond with ONLY valid JSON, no markdown fences, no commentary, in exactly this shape:
 {"vocab":[{"japanese":"","reading":"","meaning":"","topic":""}],"grammar":[{"point":"","explanation":"","example_ja":"","example_en":""}],"examples":[{"japanese":"","translation":""}],"has_more":false}
 Keep meaning and explanation under 10 words each. Choose a short natural topic for each vocab word (such as Verbs, Greetings, Food, Adjectives, Numbers, Travel, Family, Time) or invent a short one if nothing fits. If a category has nothing new, return an empty array for it.
-Include AT MOST 40 new vocabulary items, 15 new grammar points, and 15 new example sentences per response, even if the notes contain more. Work through the notes in the order they appear (top of the file first). If you stopped early because of these limits, set "has_more" to true; otherwise set it to false. Never end your JSON in the middle of an item or with unclosed brackets.
+Include AT MOST 15 new vocabulary items, 5 new grammar points, and 5 new example sentences per response, even if the notes contain more. Work through the notes in the order they appear (top of the file first). If you stopped early because of these limits, set "has_more" to true; otherwise set it to false. Never end your JSON in the middle of an item or with unclosed brackets.
 Some pages may contain nothing but a bare number or date stamp (for example a page that just says "0507"), left over from when this was separate Google Doc tabs exported together into one file. These are not lesson content — ignore them entirely.`;
 
 const SYSTEM_EXPLAIN = `You are an encouraging Japanese teacher. Given one saved item from a student's notebook, give a deeper plain-English explanation: nuance, when to use it, common mistakes, and one or two extra example sentences with translations. Plain text only, under 180 words, no markdown headers.`;
@@ -409,7 +409,7 @@ function UploadView({ notes, onSaved }) {
         const contentParts = filePart ? [filePart] : [];
         contentParts.push({ type: "text", text: promptText });
 
-        const raw = await callClaude(SYSTEM_ORGANIZE, contentParts, 4096);
+        const raw = await callClaude(SYSTEM_ORGANIZE, contentParts, 1200);
         const cleaned = stripFences(raw);
         let parsed;
         try {
