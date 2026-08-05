@@ -441,7 +441,7 @@ function UploadView({ notes, onSaved }) {
         }
         contentParts.push({ type: "text", text: promptText });
 
-        const raw = await callClaude(SYSTEM_ORGANIZE, contentParts, 1200);
+        const raw = await callClaude(SYSTEM_ORGANIZE, contentParts, 4096);
         const cleaned = stripFences(raw);
         let parsed;
         try {
