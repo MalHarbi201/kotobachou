@@ -1,6 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { ChevronLeft, Trash2, LogOut } from "lucide-react";
 import { signUp, signIn, refreshSession, signOutRemote, getNotebook, saveNotebook } from "./supabaseClient";
+import * as pdfjsLib from "pdfjs-dist";
+import pdfjsWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorkerUrl;
 
 const SESSION_KEY = "kotobachou-session";
 const EMPTY_NOTES = { vocab: [], grammar: [], examples: [] };
@@ -61,6 +65,22 @@ function readFileAsBase64(file) {
     reader.onerror = () => reject(new Error("Could not read that file."));
     reader.readAsDataURL(file);
   });
+}
+
+async function pdfToPageImages(file) {
+  const buf = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+  const images = [];
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const viewport = page.getViewport({ scale: 1.5 });
+    const canvas = document.createElement("canvas");
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    await page.render({ canvasContext: canvas.getContext("2d"), viewport }).promise;
+    images.push(canvas.toDataURL("image/jpeg", 0.85).split(",")[1]);
+  }
+  return images;
 }
 
 function shuffle(arr) {
@@ -365,11 +385,16 @@ function UploadView({ notes, onSaved }) {
     setProgress("Reading your file…");
     try {
       let filePart = null;
+      let pdfPages = null;
       if (file) {
-        const base64 = await readFileAsBase64(file);
         if (file.type === "application/pdf") {
-          filePart = { type: "document", source: { type: "base64", media_type: "application/pdf", data: base64 } };
+          setProgress("Splitting PDF into pages…");
+          pdfPages = await pdfToPageImages(file);
+          if (pdfPages.length === 0) {
+            throw new Error("Could not read any pages from that PDF.");
+          }
         } else if (file.type.indexOf("image/") === 0) {
+          const base64 = await readFileAsBase64(file);
           filePart = { type: "image", source: { type: "base64", media_type: file.type, data: base64 } };
         } else {
           throw new Error("That file type is not supported yet — try an image, a PDF, or paste text instead.");
@@ -386,7 +411,7 @@ function UploadView({ notes, onSaved }) {
       let sessionVocab = [];
       let sessionGrammar = [];
       let sessionExamples = [];
-      const MAX_PASSES = 15;
+      const MAX_PASSES = pdfPages ? pdfPages.length : 15;
       let pass = 0;
       let hasMore = true;
       let stoppedEarly = false;
@@ -394,7 +419,9 @@ function UploadView({ notes, onSaved }) {
       while (hasMore && pass < MAX_PASSES) {
         pass = pass + 1;
         const foundSoFar = sessionVocab.length + sessionGrammar.length + sessionExamples.length;
-        setProgress(pass === 1 ? "Reading your notes…" : "Pass " + pass + " — " + foundSoFar + " new item" + (foundSoFar === 1 ? "" : "s") + " found so far…");
+        setProgress(pdfPages
+          ? "Reading page " + pass + " of " + pdfPages.length + "…"
+          : (pass === 1 ? "Reading your notes…" : "Pass " + pass + " — " + foundSoFar + " new item" + (foundSoFar === 1 ? "" : "s") + " found so far…"));
 
         const knownVocab = notes.vocab.concat(sessionVocab).slice(-300).map(function (v) { return v.japanese + "|" + v.reading; }).join(", ") || "(none yet)";
         const knownGrammar = notes.grammar.concat(sessionGrammar).slice(-200).map(function (g) { return g.point; }).join(", ") || "(none yet)";
@@ -406,7 +433,12 @@ function UploadView({ notes, onSaved }) {
           (text.trim() ? "Typed notes:\n" + text.trim() + "\n\n" : "") +
           "Extract only new items not in the already-saved lists above, following the JSON format from your instructions.";
 
-        const contentParts = filePart ? [filePart] : [];
+        const contentParts = [];
+        if (pdfPages) {
+          contentParts.push({ type: "image", source: { type: "base64", media_type: "image/jpeg", data: pdfPages[pass - 1] } });
+        } else if (filePart) {
+          contentParts.push(filePart);
+        }
         contentParts.push({ type: "text", text: promptText });
 
         const raw = await callClaude(SYSTEM_ORGANIZE, contentParts, 1200);
@@ -430,9 +462,13 @@ function UploadView({ notes, onSaved }) {
         sessionGrammar = sessionGrammar.concat(newGrammar);
         sessionExamples = sessionExamples.concat(newExamples);
 
-        hasMore = !!parsed.has_more;
-        if (newVocab.length + newGrammar.length + newExamples.length === 0) {
-          break;
+        if (pdfPages) {
+          hasMore = pass < pdfPages.length;
+        } else {
+          hasMore = !!parsed.has_more;
+          if (newVocab.length + newGrammar.length + newExamples.length === 0) {
+            break;
+          }
         }
       }
 
