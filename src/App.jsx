@@ -352,7 +352,7 @@ function MainApp({ session, onSessionUpdate, onLogout }) {
 
         {view === "upload" && <UploadView notes={notes} onSaved={persist} />}
         {view === "browse" && <BrowseView notes={notes} onChange={persist} />}
-        {view === "export" && <ExportView notes={notes} />}
+        {view === "export" && <ExportView notes={notes} onClear={function () { return persist(EMPTY_NOTES); }} />}
         {view === "practice" && <PracticeView />}
         {view === "quiz" && <QuizView notes={notes} />}
       </div>
@@ -757,7 +757,20 @@ function BrowseView({ notes, onChange }) {
   );
 }
 
-function ExportView({ notes }) {
+function ExportView({ notes, onClear }) {
+  const [confirming, setConfirming] = useState(false);
+  const [clearing, setClearing] = useState(false);
+
+  async function handleClear() {
+    setClearing(true);
+    try {
+      await onClear();
+      setConfirming(false);
+    } finally {
+      setClearing(false);
+    }
+  }
+
   function handleExport() {
     const payload = {
       exportedAt: new Date().toISOString(),
@@ -787,6 +800,32 @@ function ExportView({ notes }) {
       <button className="kb-btn" style={{ marginTop: 16 }} onClick={handleExport} disabled={total === 0}>
         Download backup
       </button>
+
+      <div style={{ marginTop: 32, paddingTop: 24, borderTop: "1px solid var(--paper-line)" }}>
+        <div className="kb-topic-header" style={{ color: "var(--shu)" }}>Danger zone</div>
+        <p style={{ color: "var(--ink-soft)", marginTop: 8 }}>
+          Permanently erase everything saved to your account so you can start over with a fresh set of notes. Download a backup first if you might want this data later.
+        </p>
+        {!confirming ? (
+          <button className="kb-btn danger" style={{ marginTop: 12 }} onClick={function () { setConfirming(true); }} disabled={total === 0}>
+            Clear all data
+          </button>
+        ) : (
+          <div style={{ marginTop: 12 }}>
+            <p style={{ fontWeight: "bold" }}>
+              Delete all {total} item{total === 1 ? "" : "s"}? This cannot be undone.
+            </p>
+            <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
+              <button className="kb-btn danger" onClick={handleClear} disabled={clearing}>
+                {clearing ? "Deleting…" : "Yes, delete everything"}
+              </button>
+              <button className="kb-btn secondary" onClick={function () { setConfirming(false); }} disabled={clearing}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
