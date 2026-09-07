@@ -866,6 +866,34 @@ const KATAKANA = [
   ["パ", "pa"], ["ピ", "pi"], ["プ", "pu"], ["ペ", "pe"], ["ポ", "po"]
 ];
 
+const KANJI = [
+  ["一", "ichi", "one"], ["二", "ni", "two"], ["三", "san", "three"], ["四", "yon", "four"], ["五", "go", "five"],
+  ["六", "roku", "six"], ["七", "nana", "seven"], ["八", "hachi", "eight"], ["九", "kyuu", "nine"], ["十", "juu", "ten"],
+  ["百", "hyaku", "hundred"], ["千", "sen", "thousand"], ["万", "man", "ten thousand"], ["円", "en", "yen"], ["時", "ji", "hour / time"],
+  ["半", "han", "half"], ["分", "fun", "minute"], ["日", "hi", "day / sun"], ["月", "tsuki", "month / moon"], ["火", "hi", "fire"],
+  ["水", "mizu", "water"], ["木", "ki", "tree / wood"], ["金", "kin", "gold / money"], ["土", "tsuchi", "earth / soil"], ["年", "toshi", "year"],
+  ["上", "ue", "up / above"], ["下", "shita", "down / below"], ["中", "naka", "middle / inside"], ["外", "soto", "outside"], ["右", "migi", "right"],
+  ["左", "hidari", "left"], ["前", "mae", "front / before"], ["後", "ushiro", "behind / after"], ["北", "kita", "north"], ["南", "minami", "south"],
+  ["東", "higashi", "east"], ["西", "nishi", "west"], ["人", "hito", "person"], ["子", "ko", "child"], ["女", "onna", "woman"],
+  ["男", "otoko", "man"], ["父", "chichi", "father"], ["母", "haha", "mother"], ["友", "tomo", "friend"], ["私", "watashi", "I / me"],
+  ["今", "ima", "now"], ["毎", "mai", "every"], ["何", "nani", "what"], ["学", "gaku", "study"], ["校", "kou", "school"],
+  ["生", "sei", "life / student"], ["先", "sen", "previous / ahead"], ["社", "sha", "company"], ["会", "kai", "meeting"], ["食", "taberu", "eat"],
+  ["飲", "nomu", "drink"], ["見", "miru", "see"], ["聞", "kiku", "hear / ask"], ["読", "yomu", "read"], ["書", "kaku", "write"],
+  ["話", "hanasu", "speak"], ["言", "iu", "say"], ["語", "go", "language"], ["入", "hairu", "enter"], ["出", "deru", "exit"],
+  ["行", "iku", "go"], ["来", "kuru", "come"], ["帰", "kaeru", "return"], ["買", "kau", "buy"], ["売", "uru", "sell"],
+  ["持", "motsu", "hold"], ["待", "matsu", "wait"], ["立", "tatsu", "stand"], ["休", "yasumu", "rest"], ["働", "hataraku", "work"],
+  ["使", "tsukau", "use"], ["作", "tsukuru", "make"], ["思", "omou", "think"], ["知", "shiru", "know"], ["歩", "aruku", "walk"],
+  ["走", "hashiru", "run"], ["好", "suki", "like"], ["悪", "warui", "bad"], ["高", "takai", "high / expensive"], ["安", "yasui", "cheap / safe"],
+  ["大", "ookii", "big"], ["小", "chiisai", "small"], ["新", "atarashii", "new"], ["古", "furui", "old"], ["長", "nagai", "long"],
+  ["多", "ooi", "many"], ["少", "sukunai", "few"], ["早", "hayai", "early"], ["白", "shiroi", "white"], ["黒", "kuroi", "black"],
+  ["赤", "akai", "red"], ["青", "aoi", "blue"], ["天", "ten", "sky / heaven"], ["気", "ki", "spirit / feeling"], ["雨", "ame", "rain"],
+  ["電", "den", "electricity"], ["車", "kuruma", "car"], ["駅", "eki", "station"], ["道", "michi", "road / way"], ["店", "mise", "shop"],
+  ["家", "ie", "house / home"], ["国", "kuni", "country"], ["本", "hon", "book / origin"], ["名", "na", "name"], ["物", "mono", "thing"],
+  ["週", "shuu", "week"], ["朝", "asa", "morning"], ["昼", "hiru", "daytime"], ["夜", "yoru", "night"], ["体", "karada", "body"],
+  ["手", "te", "hand"], ["足", "ashi", "foot / leg"], ["目", "me", "eye"], ["耳", "mimi", "ear"], ["口", "kuchi", "mouth"],
+  ["心", "kokoro", "heart / mind"], ["間", "aida", "between"]
+];
+
 function PracticeView() {
   const [kanaSet, setKanaSet] = useState("hiragana");
   const [mode, setMode] = useState("mc");
@@ -878,13 +906,14 @@ function PracticeView() {
   function pool() {
     if (kanaSet === "hiragana") return HIRAGANA;
     if (kanaSet === "katakana") return KATAKANA;
+    if (kanaSet === "kanji") return KANJI;
     return HIRAGANA.concat(KATAKANA);
   }
 
   function nextQuestion() {
     const p = pool();
     const pick = p[Math.floor(Math.random() * p.length)];
-    const q = { kana: pick[0], romaji: pick[1] };
+    const q = { kana: pick[0], romaji: pick[1], meaning: pick[2] };
     setQuestion(q);
     setFeedback(null);
     setTypedAnswer("");
@@ -923,6 +952,7 @@ function PracticeView() {
         <button className={"kb-btn" + (kanaSet === "hiragana" ? "" : " secondary")} onClick={function () { setKanaSet("hiragana"); }}>Hiragana</button>
         <button className={"kb-btn" + (kanaSet === "katakana" ? "" : " secondary")} onClick={function () { setKanaSet("katakana"); }}>Katakana</button>
         <button className={"kb-btn" + (kanaSet === "both" ? "" : " secondary")} onClick={function () { setKanaSet("both"); }}>Both</button>
+        <button className={"kb-btn" + (kanaSet === "kanji" ? "" : " secondary")} onClick={function () { setKanaSet("kanji"); }}>Kanji</button>
       </div>
       <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
         <button className={"kb-btn" + (mode === "mc" ? "" : " secondary")} onClick={function () { setMode("mc"); }}>Multiple choice</button>
@@ -932,7 +962,7 @@ function PracticeView() {
       <p style={{ marginTop: 16, fontSize: 13, color: "var(--ink-soft)" }}>Score: {score.correct} / {score.total}</p>
 
       <div className="kb-card" style={{ marginTop: 12, textAlign: "center", padding: 32 }}>
-        <div style={{ fontFamily: "'Shippori Mincho', serif", fontSize: 64 }}>{question.kana}</div>
+        <div style={{ fontFamily: "'Zen Maru Gothic', sans-serif", fontSize: 64 }}>{question.kana}</div>
       </div>
 
       {mode === "mc" && (
@@ -967,6 +997,7 @@ function PracticeView() {
         <div style={{ marginTop: 16 }}>
           <p style={{ color: feedback === "correct" ? "var(--indigo)" : "var(--shu)", fontWeight: "bold" }}>
             {feedback === "correct" ? "Correct!" : "Not quite — it's \"" + question.romaji + "\"."}
+            {question.meaning ? " (" + question.meaning + ")" : ""}
           </p>
           <button className="kb-btn" onClick={nextQuestion}>Next</button>
         </div>
@@ -977,6 +1008,7 @@ function PracticeView() {
 
 function QuizView({ notes }) {
   const [mode, setMode] = useState("mc");
+  const [includeKanji, setIncludeKanji] = useState(true);
   const [question, setQuestion] = useState(null);
   const [options, setOptions] = useState([]);
   const [typedAnswer, setTypedAnswer] = useState("");
@@ -986,7 +1018,8 @@ function QuizView({ notes }) {
   function pool() {
     const fromVocab = notes.vocab.map(function (v) { return { prompt: v.japanese, sub: v.reading, answer: v.meaning }; });
     const fromGrammar = notes.grammar.map(function (g) { return { prompt: g.point, sub: "", answer: g.explanation }; });
-    return fromVocab.concat(fromGrammar);
+    const fromKanji = includeKanji ? KANJI.map(function (k) { return { prompt: k[0], sub: k[1], answer: k[2] }; }) : [];
+    return fromVocab.concat(fromGrammar).concat(fromKanji);
   }
 
   function nextQuestion() {
@@ -1008,7 +1041,7 @@ function QuizView({ notes }) {
   useEffect(function () {
     nextQuestion();
     // eslint-disable-next-line
-  }, [mode, notes.vocab.length, notes.grammar.length]);
+  }, [mode, includeKanji, notes.vocab.length, notes.grammar.length]);
 
   function answerMc(choice) {
     if (feedback) return;
@@ -1038,8 +1071,12 @@ function QuizView({ notes }) {
       <div>
         <div className="kb-wordmark" style={{ fontSize: 26 }}>Quiz</div>
         <p style={{ marginTop: 16, color: "var(--ink-soft)" }}>
-          You need at least a few saved words or grammar points before there's enough to quiz you on. Add some notes first.
+          You need at least a few saved words, grammar points, or kanji questions before there's enough to quiz you on.
         </p>
+        <label style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 10, fontSize: 13, cursor: "pointer" }}>
+          <input type="checkbox" checked={includeKanji} onChange={function () { setIncludeKanji(!includeKanji); }} />
+          Include kanji questions
+        </label>
       </div>
     );
   }
@@ -1054,11 +1091,15 @@ function QuizView({ notes }) {
         <button className={"kb-btn" + (mode === "mc" ? "" : " secondary")} onClick={function () { setMode("mc"); }}>Multiple choice</button>
         <button className={"kb-btn" + (mode === "typed" ? "" : " secondary")} onClick={function () { setMode("typed"); }}>Type the answer</button>
       </div>
+      <label style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 10, fontSize: 13, cursor: "pointer" }}>
+        <input type="checkbox" checked={includeKanji} onChange={function () { setIncludeKanji(!includeKanji); }} />
+        Include kanji questions
+      </label>
 
       <p style={{ marginTop: 16, fontSize: 13, color: "var(--ink-soft)" }}>Score: {score.correct} / {score.total}</p>
 
       <div className="kb-card" style={{ marginTop: 12, textAlign: "center", padding: 32 }}>
-        <div style={{ fontFamily: "'Shippori Mincho', serif", fontSize: 34 }}>{question.prompt}</div>
+        <div style={{ fontFamily: "'Zen Maru Gothic', sans-serif", fontSize: 34 }}>{question.prompt}</div>
         {question.sub && <div style={{ fontSize: 14, color: "var(--ink-soft)", marginTop: 6 }}>{question.sub}</div>}
         <div style={{ fontSize: 12, color: "var(--ink-soft)", marginTop: 6 }}>What does this mean?</div>
       </div>
